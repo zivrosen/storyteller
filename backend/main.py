@@ -25,6 +25,8 @@ STAGE_LABELS = {
     "judge_done": "Editor reviewed",
     "refine_start": "Polishing based on feedback...",
     "refine_done": "Revision done",
+    "tweak_start": "Applying your tweak...",
+    "tweak_done": "Tweak applied.",
 }
 
 
@@ -70,8 +72,12 @@ def main() -> None:
         if not choice:
             print("Sweet dreams!")
             break
-        print("  - Applying your tweak...", file=sys.stderr)
-        draft = apply_user_tweak(draft, choice)
+        draft, report = apply_user_tweak(draft, choice, on_event=_on_event)
+        if not report.passing():
+            print(
+                "  - Heads up: the editor flagged the tweaked version.",
+                file=sys.stderr,
+            )
         _print_story(draft)
 
 

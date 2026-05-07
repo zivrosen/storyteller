@@ -44,6 +44,10 @@ class JudgeReport:
     scores: dict[str, DimensionScore]
     overall_pass: bool
     top_priority_fix: Optional[str]
+    # False when the judge response couldn't be parsed; consumers should treat
+    # the report as informational only and skip refinement (refining without a
+    # real critique tends to make stories worse, not better).
+    parseable: bool = True
 
     def passing(self) -> bool:
         if not self.scores:

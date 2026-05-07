@@ -149,11 +149,15 @@ async function streamSSE(url, body, onMessage) {
   }
 }
 
-function setBusy(busy) {
+// path: 'tell' | 'tweak' | null. Only the matching button shows its busy
+// label; both buttons are disabled while either is in flight so the user
+// can't queue a tweak on top of an in-progress generation.
+function setBusy(path) {
+  const busy = path !== null;
   els.tellBtn.disabled = busy;
   els.tweakBtn.disabled = busy;
-  els.tellBtn.textContent = busy ? 'Telling…' : 'Tell me a story';
-  els.tweakBtn.textContent = busy ? 'Polishing…' : 'Apply tweak';
+  els.tellBtn.textContent = path === 'tell' ? 'Telling…' : 'Tell me a story';
+  els.tweakBtn.textContent = path === 'tweak' ? 'Polishing…' : 'Apply tweak';
 }
 
 function showError(msg) {
@@ -170,7 +174,7 @@ async function generateStory() {
   const input = els.input.value.trim();
   if (!input) return;
   clearError();
-  setBusy(true);
+  setBusy('tell');
   resetTimeline();
   els.story.classList.add('hidden');
   els.tweak.classList.add('hidden');
@@ -191,7 +195,7 @@ async function generateStory() {
   } catch (err) {
     showError(err.message || 'Something went wrong.');
   } finally {
-    setBusy(false);
+    setBusy(null);
     setTimeout(() => els.progress.classList.add('hidden'), 600);
   }
 }
@@ -200,7 +204,7 @@ async function applyTweak() {
   const request = els.tweakInput.value.trim();
   if (!request || !currentStory) return;
   clearError();
-  setBusy(true);
+  setBusy('tweak');
   try {
     await streamSSE(
       '/api/tweak',
@@ -218,7 +222,7 @@ async function applyTweak() {
   } catch (err) {
     showError(err.message || 'Something went wrong.');
   } finally {
-    setBusy(false);
+    setBusy(null);
   }
 }
 

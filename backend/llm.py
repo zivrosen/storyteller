@@ -1,17 +1,32 @@
 import os
+import threading
 
 from dotenv import load_dotenv
 from openai import OpenAI
 
 load_dotenv()
 
+# Hard cap per LLM call. The SDK's default is 10 minutes, which would let a
+# stuck call hold an SSE connection (and a worker thread) indefinitely. 45s
+# comfortably covers the storyteller stage on gpt-3.5-turbo. The SDK retries
+# transient failures up to max_retries times within this budget.
+_REQUEST_TIMEOUT_SECONDS = 45.0
+
 _client: OpenAI | None = None
+_client_lock = threading.Lock()
 
 
 def _get_client() -> OpenAI:
+    """Lazy, thread-safe singleton. Double-checked locking avoids the rare
+    race where two threads both see `_client is None` on first hit."""
     global _client
     if _client is None:
-        _client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        with _client_lock:
+            if _client is None:
+                _client = OpenAI(
+                    api_key=os.getenv("OPENAI_API_KEY"),
+                    timeout=_REQUEST_TIMEOUT_SECONDS,
+                )
     return _client
 
 

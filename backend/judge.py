@@ -44,7 +44,13 @@ def parse_judge_response(raw: str) -> JudgeReport:
             scores[dim] = DimensionScore(score=3, critique="(missing from judge response)")
             continue
         score = entry.get("score")
-        if not isinstance(score, int) or not (1 <= score <= 5):
+        # bool is a subclass of int in Python, so reject it explicitly before
+        # the int check — `True` would otherwise read as 1.
+        if (
+            isinstance(score, bool)
+            or not isinstance(score, int)
+            or not (1 <= score <= 5)
+        ):
             score = 3
         critique = entry.get("critique", "")
         if not isinstance(critique, str):
@@ -71,19 +77,16 @@ def judge_story(story: str) -> JudgeReport:
     try:
         return parse_judge_response(raw)
     except ValueError:
-        # One soft-retry: ask again with stricter instruction. If still bad,
-        # return a failing report so refinement is forced once more.
-        raw = llm.call_model(
-            JUDGE_PROMPT.format(story=story) + "\n\nReminder: respond with valid JSON only.",
-            max_tokens=1200,
-            temperature=0.0,
-            json_mode=True,
+        # JSON-mode parse failures are rare and retrying the same call rarely
+        # helps — it just doubles the cost. Return a non-passing, non-parseable
+        # report so the pipeline ships the current draft (refining against
+        # synthetic 'unparseable' critiques tends to degrade the story).
+        return JudgeReport(
+            scores={
+                dim: DimensionScore(3, "Judge response unparseable.")
+                for dim in DIMENSIONS
+            },
+            overall_pass=False,
+            top_priority_fix=None,
+            parseable=False,
         )
-        try:
-            return parse_judge_response(raw)
-        except ValueError:
-            return JudgeReport(
-                scores={dim: DimensionScore(3, "Judge response unparseable.") for dim in DIMENSIONS},
-                overall_pass=False,
-                top_priority_fix="Regenerate with cleaner structure.",
-            )

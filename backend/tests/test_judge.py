@@ -70,22 +70,33 @@ def test_parse_missing_scores_section_yields_all_threes():
     assert not report.passing()
 
 
-def test_judge_story_recovers_from_one_bad_response():
-    """First call returns garbage; second call returns valid JSON. Should succeed."""
+def test_parse_bool_score_falls_back_to_three():
+    """`True` is technically an int in Python — must be rejected explicitly."""
+    scores = _full_scores(5)
+    scores["safety"] = {"score": True, "critique": "x"}
+    raw = json.dumps(
+        {"scores": scores, "overall_pass": True, "top_priority_fix": None}
+    )
+    report = parse_judge_response(raw)
+    assert report.scores["safety"].score == 3
+
+
+def test_judge_story_succeeds_on_good_response():
     good = json.dumps(
         {"scores": _full_scores(5), "overall_pass": True, "top_priority_fix": None}
     )
-    responses = iter(["not json", good])
-    with patch("llm.call_model", side_effect=lambda *a, **kw: next(responses)) as mock:
+    with patch("llm.call_model", return_value=good) as mock:
         report = judge_story("a calming story")
-    assert mock.call_count == 2
+    assert mock.call_count == 1
     assert report.passing()
+    assert report.parseable
 
 
-def test_judge_story_returns_failing_report_after_two_bad_responses():
-    """Both retries produce bad JSON -> safe failing report, not an exception."""
-    responses = iter(["not json", "still not json"])
-    with patch("llm.call_model", side_effect=lambda *a, **kw: next(responses)):
+def test_judge_story_returns_unparseable_report_without_retrying():
+    """Bad JSON → single call, non-passing, parseable=False (no retry)."""
+    with patch("llm.call_model", return_value="not json") as mock:
         report = judge_story("a calming story")
+    assert mock.call_count == 1
+    assert not report.parseable
     assert not report.passing()
-    assert report.top_priority_fix is not None
+    assert report.top_priority_fix is None

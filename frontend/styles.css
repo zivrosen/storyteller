@@ -253,8 +253,10 @@ button:active { transform: translateY(1px); }
   margin: 0 0 1.15em;
 }
 
-.story-body p:last-of-type {
-  /* Wind-down paragraph: ever-so-slightly slower, dimmer feel */
+.story-body p:last-of-type:not(:only-of-type) {
+  /* Wind-down paragraph: ever-so-slightly slower, dimmer feel.
+     Skip when there's only one paragraph — single-paragraph stories
+     shouldn't be styled as if they were entirely a wind-down. */
   color: var(--text-soft);
   font-style: italic;
 }

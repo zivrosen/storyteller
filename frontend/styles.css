@@ -1,0 +1,297 @@
+:root {
+  --bg: #fbf8f1;
+  --bg-soft: #f3eee2;
+  --card: #ffffff;
+  --text: #2d2a26;
+  --text-soft: #5a544c;
+  --muted: #8a8278;
+  --accent: #5b6e9c;
+  --accent-hover: #4a5b85;
+  --accent-soft: #e7ecf6;
+  --border: #ece8df;
+  --success: #6b8e7f;
+  --error-bg: #fce9e9;
+  --error-text: #9b3a3a;
+  --error-border: #f5cccc;
+  --shadow: 0 1px 2px rgba(45, 42, 38, 0.04),
+            0 8px 24px rgba(45, 42, 38, 0.06);
+  --radius: 14px;
+  --radius-pill: 999px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Lora', Georgia, 'Times New Roman', serif;
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 64px 24px 96px;
+}
+
+/* --- Hero --- */
+.hero {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.hero h1 {
+  font-family: 'Lora', Georgia, serif;
+  font-weight: 500;
+  font-size: 44px;
+  letter-spacing: -0.015em;
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+.tagline {
+  margin: 0;
+  font-style: italic;
+  color: var(--muted);
+  font-size: 16px;
+}
+
+/* --- Card --- */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+  animation: fade-up 0.45s ease both;
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Form labels & inputs --- */
+.label {
+  display: block;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+
+textarea, input[type='text'] {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 16px;
+  background: #fdfcf8;
+  color: var(--text);
+  resize: vertical;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+textarea {
+  min-height: 80px;
+}
+
+textarea:focus, input[type='text']:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+textarea::placeholder, input::placeholder {
+  color: #b9b3aa;
+  font-style: italic;
+}
+
+/* --- Actions --- */
+.actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+button {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.05s;
+}
+
+button:active { transform: translateY(1px); }
+
+.primary {
+  background: var(--accent);
+  color: white;
+}
+.primary:hover:not(:disabled) { background: var(--accent-hover); }
+.primary:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.ghost {
+  background: transparent;
+  color: var(--muted);
+  border-color: transparent;
+}
+.ghost:hover { color: var(--text); }
+
+.hint {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* --- Progress timeline --- */
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+}
+
+.timeline li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--muted);
+  transition: color 0.3s ease;
+}
+
+.timeline .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: transparent;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+.timeline li.active {
+  color: var(--text);
+}
+
+.timeline li.active .dot {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+.timeline li.done {
+  color: var(--text-soft);
+}
+
+.timeline li.done .dot {
+  background: var(--success);
+  border-color: var(--success);
+  animation: none;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(91, 110, 156, 0.18); }
+  50%      { box-shadow: 0 0 0 6px rgba(91, 110, 156, 0); }
+}
+
+/* --- Story --- */
+.story {
+  padding: 36px 40px 32px;
+}
+
+.story-meta {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.chip {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+  background: var(--bg);
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+}
+
+.story-body {
+  font-size: 18px;
+  line-height: 1.85;
+  color: var(--text);
+}
+
+.story-body h2 {
+  font-family: 'Lora', Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 30px;
+  margin: 0 0 28px;
+  text-align: center;
+  color: var(--text);
+  letter-spacing: -0.005em;
+}
+
+.story-body p {
+  margin: 0 0 1.15em;
+}
+
+.story-body p:last-of-type {
+  /* Wind-down paragraph: ever-so-slightly slower, dimmer feel */
+  color: var(--text-soft);
+  font-style: italic;
+}
+
+/* --- Error --- */
+.error {
+  background: var(--error-bg);
+  color: var(--error-text);
+  border-color: var(--error-border);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+}
+
+/* --- Footer --- */
+.footnote {
+  text-align: center;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 56px;
+}
+
+.hidden { display: none !important; }
+
+/* --- Responsive --- */
+@media (max-width: 600px) {
+  .page { padding: 32px 16px 64px; }
+  .hero h1 { font-size: 34px; }
+  .card { padding: 20px; }
+  .story { padding: 24px 22px; }
+  .story-body { font-size: 17px; line-height: 1.75; }
+  .story-body h2 { font-size: 24px; margin-bottom: 20px; }
+  .actions { flex-wrap: wrap; }
+  .hint { width: 100%; text-align: right; }
+}
+
+/* Respect reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .card, .timeline li.active .dot { animation: none; }
+}

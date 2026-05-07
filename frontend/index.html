@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Bedtime — A Calm Story Companion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&display=swap"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <h1>Bedtime</h1>
+        <p class="tagline">A calm story for ages 5–10, told just for tonight.</p>
+      </header>
+
+      <section id="composer" class="card">
+        <label for="story-input" class="label">What kind of story?</label>
+        <textarea
+          id="story-input"
+          rows="3"
+          placeholder="A story about Alice and her cat Bob, who finds a quiet star in the garden…"
+          autofocus
+        ></textarea>
+        <div class="actions">
+          <button id="tell-btn" class="primary">Tell me a story</button>
+          <span class="hint">⌘ + Enter to send</span>
+        </div>
+      </section>
+
+      <section id="progress" class="card hidden" aria-live="polite">
+        <ol class="timeline">
+          <li data-stage="categorize">
+            <span class="dot" aria-hidden="true"></span>
+            <span class="text">Reading your request</span>
+          </li>
+          <li data-stage="plan">
+            <span class="dot" aria-hidden="true"></span>
+            <span class="text">Sketching the story arc</span>
+          </li>
+          <li data-stage="tell">
+            <span class="dot" aria-hidden="true"></span>
+            <span class="text">Writing the story</span>
+          </li>
+          <li data-stage="judge">
+            <span class="dot" aria-hidden="true"></span>
+            <span class="text">Asking the editor</span>
+          </li>
+        </ol>
+      </section>
+
+      <article id="story" class="card story hidden">
+        <div class="story-meta">
+          <span id="reading-time" class="chip"></span>
+        </div>
+        <div id="story-body" class="story-body"></div>
+      </article>
+
+      <section id="tweak" class="card hidden">
+        <label for="tweak-input" class="label">Want to change anything?</label>
+        <input
+          id="tweak-input"
+          type="text"
+          placeholder="make it shorter · more about Bob · less scary"
+        />
+        <div class="actions">
+          <button id="tweak-btn" class="primary">Apply tweak</button>
+          <button id="restart-btn" class="ghost">Start fresh</button>
+        </div>
+      </section>
+
+      <div id="error" class="card error hidden" role="alert"></div>
+
+      <footer class="footnote">
+        Built for parents · stories generated each night, never stored.
+      </footer>
+    </main>
+
+    <script src="/static/app.js" defer></script>
+  </body>
+</html>

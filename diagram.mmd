@@ -1,0 +1,35 @@
+flowchart TD
+    User([User Request<br/>CLI prompt])
+
+    subgraph Pipeline[Story Pipeline]
+        direction TB
+        Cat["1 - Categorizer<br/>(LLM, JSON mode)<br/><br/>category, characters,<br/>themes, tone, length"]
+        Plan["2 - Story Planner<br/>(LLM, JSON mode)<br/><br/>4-beat outline:<br/>SETUP, SPARK,<br/>RESOLUTION, WIND_DOWN"]
+        Tell["3 - Storyteller<br/>(LLM, prose)<br/><br/>target words, tone,<br/>banned-content list,<br/>wind-down required"]
+        Judge{{"4 - Judge<br/>(LLM, JSON mode)<br/><br/>7-dim rubric<br/>pass = all >= 4/5"}}
+        Refine["5 - Refiner<br/>(LLM, targeted edits)<br/><br/>not a full rewrite<br/>max 2 iterations"]
+
+        Cat -- StoryRequest --> Plan
+        Plan -- StoryPlan --> Tell
+        Tell -- Draft --> Judge
+        Judge -- fail --> Refine
+        Refine -- new Draft --> Judge
+    end
+
+    Display[/"Display Story<br/>+ reading time"/]
+    Tweak["6 - User Feedback<br/>(interactive CLI)<br/><br/>Enter = accept<br/>text = User Tweak prompt"]
+    UserTweak["User Tweak<br/>(LLM, targeted edits<br/>from free-form request)"]
+
+    User --> Cat
+    Judge -- pass --> Display
+    Display --> Tweak
+    Tweak -- text --> UserTweak
+    UserTweak --> Display
+    Tweak -- Enter --> Done([Sweet dreams])
+
+    classDef llm fill:#e7f0ff,stroke:#3b6ec5,color:#0b2545
+    classDef io fill:#fff7e6,stroke:#c98a1a,color:#4a2f00
+    classDef done fill:#e9f7ec,stroke:#3a8a4f,color:#1c4a2c
+    class Cat,Plan,Tell,Judge,Refine,UserTweak llm
+    class User,Display,Tweak io
+    class Done done

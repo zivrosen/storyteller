@@ -40,18 +40,20 @@ flowchart TD
     class Done done
 ```
 
+
+
 Legend: blue = LLM call · amber = user-facing I/O · green = terminal state.
 
 ## ASCII
 
 ```
-                       ┌────────────────────────┐
+                       ┌─────────────────────────┐
                        │   User Request          │
                        │   (CLI prompt)          │
                        └────────────┬────────────┘
                                     │ free-form text
                                     ▼
-                       ┌────────────────────────┐
+                       ┌─────────────────────────┐
                        │   1. Categorizer        │
                        │   (LLM, JSON mode)      │
                        │                         │
@@ -63,7 +65,7 @@ Legend: blue = LLM call · amber = user-facing I/O · green = terminal state.
                        └────────────┬────────────┘
                                     │ StoryRequest
                                     ▼
-                       ┌────────────────────────┐
+                       ┌─────────────────────────┐
                        │   2. Story Planner      │
                        │   (LLM, JSON mode)      │
                        │                         │
@@ -75,7 +77,7 @@ Legend: blue = LLM call · amber = user-facing I/O · green = terminal state.
                        └────────────┬────────────┘
                                     │ StoryPlan
                                     ▼
-                       ┌────────────────────────┐
+                       ┌─────────────────────────┐
                        │   3. Storyteller        │
                        │   (LLM, prose)          │
                        │                         │
@@ -85,7 +87,7 @@ Legend: blue = LLM call · amber = user-facing I/O · green = terminal state.
                        └────────────┬────────────┘
                                     │ Draft
                                     ▼
-                       ┌────────────────────────┐
+                       ┌─────────────────────────┐
                        │   4. Judge              │ ◄────────────┐
                        │   (LLM, JSON mode)      │              │
                        │                         │              │
@@ -110,7 +112,7 @@ Legend: blue = LLM call · amber = user-facing I/O · green = terminal state.
                        └────┬────┘     └─────────────────┘
                             │
                             ▼
-                       ┌────────────────────────┐
+                       ┌─────────────────────────┐
                        │   6. User Feedback      │
                        │   (interactive CLI)     │
                        │                         │
@@ -120,38 +122,36 @@ Legend: blue = LLM call · amber = user-facing I/O · green = terminal state.
                        │             applies     │
                        │             targeted    │
                        │             edits       │
-                       └────────────────────────┘
+                       └─────────────────────────┘
 ```
 
 ## Key design choices
 
 - **WIND_DOWN as a first-class beat AND a judge dimension.** A generic
-  children's-story prompt will end with cheering or action. Bedtime stories
-  must end with the world quieting and a closing line that points toward
-  sleep. We enforce this both upstream (in the planner) and downstream (in
-  the judge), so the refinement loop has a specific target if it drifts.
-
+children's-story prompt will end with cheering or action. Bedtime stories
+must end with the world quieting and a closing line that points toward
+sleep. We enforce this both upstream (in the planner) and downstream (in
+the judge), so the refinement loop has a specific target if it drifts.
 - **Multi-stage decomposition.** We are constrained to gpt-3.5-turbo per the
-  assignment. Single-shot prompting on this model produces uneven structure.
-  Splitting into categorize → plan → tell → judge gives each call a smaller,
-  well-scoped job and yields more reliable structure than one big prompt.
-
+assignment. Single-shot prompting on this model produces uneven structure.
+Splitting into categorize → plan → tell → judge gives each call a smaller,
+well-scoped job and yields more reliable structure than one big prompt.
 - **Refinement is targeted, not regenerative.** The refiner prompt receives
-  the prior draft + the per-dimension critique block sorted lowest-score
-  first, and is instructed to make edits rather than rewrite. This preserves
-  what the judge already approved.
-
-- **Judge JSON parser is strict.** Even if the model claims `overall_pass:
-  true`, the parser overrides to `false` if any dimension scored below the
-  threshold. Missing or malformed dimensions default to score 3 (failing) so
-  the refinement loop is forced rather than silently passing through.
-
+the prior draft + the per-dimension critique block sorted lowest-score
+first, and is instructed to make edits rather than rewrite. This preserves
+what the judge already approved.
+- **Judge JSON parser is strict.** Even if the model claims `overall_pass: true`, the parser overrides to `false` if any dimension scored below the
+threshold. Missing or malformed dimensions default to score 3 (failing) so
+the refinement loop is forced rather than silently passing through.
 - **User feedback uses a different prompt than auto-refinement.** The auto
-  refiner addresses an editor's structured rubric; the user-tweak prompt
-  treats free-form natural-language requests as the source of truth. Mixing
-  them in one template produced muddled edits.
-
+refiner addresses an editor's structured rubric; the user-tweak prompt
+treats free-form natural-language requests as the source of truth. Mixing
+them in one template produced muddled edits.
 - **Iteration cap of 2.** Empirically clears the threshold the vast majority
-  of the time. Beyond 2, marginal quality gains are small relative to
-  latency and API cost.
+of the time. Beyond 2, marginal quality gains are small relative to
+latency and API cost.
+
 ```
+
+```
+

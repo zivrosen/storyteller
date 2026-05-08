@@ -88,6 +88,25 @@ Coverage:
 - `test_pipeline.py` — passes on first judge, refines on failure, caps at 2 refinements, event ordering, categorizer fallbacks
 - `test_server.py` — root + static assets, SSE event streaming for `/api/generate` and `/api/tweak`, refine-on-fail in the stream, input validation, LLM error surfaced as event
 
+## Quality eval
+
+Unit tests verify mechanics; an offline eval suite verifies *output quality*.
+
+```bash
+cd backend
+python evals/run_evals.py                                  # full suite
+python evals/run_evals.py --json evals/last_run.json       # snapshot
+```
+
+The runner pushes a 10-prompt set (six categories, named/unnamed
+characters, ambiguous input, one adversarial "scary fight" prompt) through
+the full pipeline and reports per-dimension judge averages, pass rate,
+refinement count, and latency. Costs ~$0.05 and runs in 3–5 minutes.
+
+This is what catches a bad prompt edit *before* it ships. See
+[`backend/evals/README.md`](./backend/evals/README.md) for the prompt set
+rationale and a sample report.
+
 ## Architecture
 
 ```mermaid

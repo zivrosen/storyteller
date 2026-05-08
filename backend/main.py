@@ -4,15 +4,6 @@ from models import Draft
 from pipeline import generate_story, apply_user_tweak
 from utils import estimate_reading_time
 
-"""
-What I would build next with 2 more hours:
-- TTS playback (OpenAI TTS) so the story can be read aloud at bedtime, with a slowing rate during the wind-down paragraph.
-- Per-child profile saved across sessions: remember the listener's name, favorite characters, themes that worked well, themes to avoid.
-- A streaming storyteller so the prose appears as it's written instead of waiting on the full draft.
-- A second judge dimension model that scores narrative pacing specifically (sentence-length tapering toward the end).
-- Web UI with paragraph-level "tap to regenerate" so a parent can patch one section without re-running the whole story.
-"""
-
 
 STAGE_LABELS = {
     "categorize_start": "Reading your request...",

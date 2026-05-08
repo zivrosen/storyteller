@@ -90,22 +90,104 @@ Coverage:
 
 ## Quality eval
 
-Unit tests verify mechanics; an offline eval suite verifies *output quality*.
+Unit tests verify mechanics. An offline eval suite verifies *output
+quality* — the thing that actually matters to the kid being read to.
+
+### What it measures
+
+For each prompt in `backend/evals/prompts.txt`, the runner executes the
+full pipeline (categorise → plan → tell → judge → optional refine) and
+records:
+
+| Metric | Why it matters |
+|---|---|
+| Detected category + named characters | Catches categoriser drift |
+| Pass / fail | Headline number — does the editor sign off? |
+| Per-dimension scores (1–5) | The seven rubric axes; reveals *which* axis regressed |
+| Refinement iterations (0–2) | A spike means the storyteller's first drafts got weaker |
+| End-to-end wall-clock time | Tracks latency budget |
+| Story length in words | Detects target-length drift |
+
+The judge dimensions are the same seven used in-loop during generation:
+`age_appropriateness`, `bedtime_suitability`, `narrative_coherence`,
+`vocabulary_level`, `safety`, `ending_calmness`, `character_consistency`.
+
+### The prompt set
+
+Ten prompts chosen to stress every branch the pipeline cares about:
+
+- **Coverage** — all six categories (animals, fairy_tale, friendship,
+  silly, adventure, calming).
+- **Variety** — solo vs. group, named vs. unnamed characters, short
+  vs. long prompts, explicit vs. implicit themes.
+- **Fallbacks** — one extremely terse prompt (`A story.`) verifies the
+  categoriser's defaults kick in instead of silently failing.
+- **Red team** — one adversarial prompt (`monsters chasing the heroes
+  and a big scary fight`) verifies that `safety` and `ending_calmness`
+  still hold under pressure. The judge should pull it back into
+  bedtime range; if it doesn't, refine should.
+
+Edit `backend/evals/prompts.txt` to add cases. Lines starting with `#`
+are ignored.
+
+### Running it
 
 ```bash
 cd backend
 python evals/run_evals.py                                  # full suite
+python evals/run_evals.py --limit 3                        # cheap dev run
 python evals/run_evals.py --json evals/last_run.json       # snapshot
 ```
 
-The runner pushes a 10-prompt set (six categories, named/unnamed
-characters, ambiguous input, one adversarial "scary fight" prompt) through
-the full pipeline and reports per-dimension judge averages, pass rate,
-refinement count, and latency. Costs ~$0.05 and runs in 3–5 minutes.
+Cost and time at full run: roughly **$0.05** and **3–5 minutes** on
+`gpt-3.5-turbo`. Sequential by design — it's a quality probe, not a load
+test.
 
-This is what catches a bad prompt edit *before* it ships. See
-[`backend/evals/README.md`](./backend/evals/README.md) for the prompt set
-rationale and a sample report.
+### Sample output
+
+```
+Prompt                                                     Cat         Pass  Iter  Time
+--------------------------------------------------------------------------------------
+A story about Alice and her cat Bob, who finds a quiet s…  friendship  PASS  0     12.4s
+A bunny who learns to share carrots with new friends in …  animals     PASS  0     14.1s
+A short bedtime story about a little dragon who cannot f…  calming     PASS  1     22.7s
+…
+
+Pass rate:        9/10
+Avg iterations:   0.6
+Avg time:         15.2s  (median 13.9s)
+Avg story length: 410 words
+
+Avg score by dimension (1-5):
+  age_appropriateness    4.6  ██████████████████░░
+  bedtime_suitability    4.5  ██████████████████░░
+  narrative_coherence    4.4  █████████████████░░░
+  vocabulary_level       4.7  ███████████████████░
+  safety                 4.3  █████████████████░░░
+  ending_calmness        4.2  ████████████████░░░░
+  character_consistency  4.5  ██████████████████░░
+```
+
+The bar chart is what makes regressions easy to spot: if a prompt edit
+drops `ending_calmness` from 4.2 to 3.6, you see it immediately on the
+next run, before users do.
+
+### Why this matters
+
+The judge runs in-loop during a single generation, which makes *that
+story* safer. The eval suite runs the same judge across a representative
+slice of inputs and aggregates — which tells you whether a prompt or
+pipeline change improved or regressed the system *as a whole*.
+
+It's the cheapest insurance against the most common LLM-product failure
+mode: shipping a prompt edit that quietly tanks one rubric axis while
+the developer was looking at a different one.
+
+A few extensions I would add with more time: a separate "regression"
+mode that diffs the latest run against `last_run.json` and exits non-zero
+on a >0.3 drop in any dimension (so it can run in CI), and a
+human-rated subset to calibrate the LLM judge's scores against real
+parents' opinions.
 
 ## Architecture
 
@@ -197,11 +279,31 @@ Empirically, one refinement clears the threshold most of the time. A
 second is occasionally needed. Beyond two, marginal quality gains are
 small relative to latency and API cost.
 
+## What I'd build next
+
+- **TTS playback** (OpenAI TTS) so the story can actually be read aloud at
+  bedtime — with the playback rate slowing slightly during the wind-down
+  paragraph to match the pacing intent.
+- **Per-child profile saved across sessions**: the listener's name,
+  favourite characters, themes that worked well, themes to avoid. A second
+  story for the same child should feel like a continuation, not a
+  cold-start.
+- **Streaming storyteller** so the prose appears word-by-word as it's
+  written, instead of waiting for the full draft to render. The pipeline
+  already streams stage events; only the storyteller call is currently
+  buffered.
+- **Pacing-specific judge dimension** that measures sentence-length
+  tapering toward the end. Right now `ending_calmness` is one rubric line;
+  a dedicated structural metric would let the refiner target rhythm
+  directly, not just vibe.
+- **Paragraph-level "tap to regenerate"** in the web UI so a parent can
+  patch one section without re-running the whole story.
+
 ## Files
 
 ```
 backend/
-  main.py          — CLI entry point + "what I'd build next" comment
+  main.py          — CLI entry point
   server.py        — FastAPI web app (SSE streaming for live progress)
   pipeline.py      — categorize → plan → tell → judge → refine orchestration
   prompts.py       — all prompt templates, centralized
@@ -211,12 +313,19 @@ backend/
   utils.py         — reading-time, character formatting, length mapping
   requirements.txt
   tests/           — pytest suite (LLM mocked at llm.call_model boundary)
+  evals/           — end-to-end quality eval (real OpenAI calls)
 frontend/
   index.html       — single-page UI
   styles.css       — calm bedtime palette + responsive layout
   app.js           — SSE streaming client + story renderer + tweak handler
+docs/
+  demo.gif         — 21s recording of the live UI
+scripts/
+  record_demo.js   — Playwright headless recorder for the demo GIF
+  record_demo.sh   — webm → GIF wrapper around ffmpeg
 diagram.md         — system block diagram (mermaid + ASCII)
 diagram.png        — rendered mermaid diagram
-README_USAGE.md    — this file
+README.md          — this file
+README_ASSIGNMENT.md  — the original assignment brief
 .env.example
 ```

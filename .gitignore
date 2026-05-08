@@ -6,3 +6,7 @@ __pycache__/
 venv/
 .DS_Store
 *~
+# Recorder intermediate (the committed asset is docs/demo.gif)
+docs/demo.webm
+scripts/node_modules/
+scripts/package-lock.json

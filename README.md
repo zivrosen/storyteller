@@ -7,6 +7,26 @@ judge with a refinement loop and an interactive feedback step.
 
 Built on `gpt-3.5-turbo` (fixed by assignment requirement).
 
+<p align="center">
+  <img src="docs/demo.gif" alt="Live demo: typing a request, the progress timeline lighting up stage-by-stage, and the story rendering at the end." width="640" />
+</p>
+
+## Example
+
+**Prompt:** *A story about Alice and her cat Bob, who finds a quiet star in the garden.*
+
+> ### Alice and Bob's Quiet Star
+>
+> In a cozy little house, Alice and her cat Bob lived together as best friends. They spent their days exploring the garden and playing in the sun.
+>
+> One evening, as they were strolling through the garden, Bob suddenly stopped and stared up at the sky. Alice followed his gaze and saw a quiet star twinkling in the distance, filling her with wonder.
+>
+> Together, Alice and Bob decided to sit under the quiet star and enjoy its peaceful light. They talked about their day and shared stories until they felt warm and content.
+>
+> As the night grew darker and the quiet star shone brighter, Alice and Bob curled up together, feeling safe and sleepy. The garden whispered lullabies as they drifted off into dreams.
+
+*Auto-categorised as `friendship` · ~52s read-aloud · passed the editor on the first try (no refinements needed). Generated end-to-end in ~12s with four LLM calls (categorise → plan → tell → judge).*
+
 ## Project layout
 
 ```
@@ -68,9 +88,51 @@ Coverage:
 - `test_pipeline.py` — passes on first judge, refines on failure, caps at 2 refinements, event ordering, categorizer fallbacks
 - `test_server.py` — root + static assets, SSE event streaming for `/api/generate` and `/api/tweak`, refine-on-fail in the stream, input validation, LLM error surfaced as event
 
-## Design
+## Architecture
 
-See [`diagram.md`](./diagram.md) for the system block diagram.
+```mermaid
+flowchart TD
+    User([User Request<br/>web or CLI])
+
+    subgraph Pipeline[Story Pipeline]
+        direction TB
+        Cat["1 - Categorizer<br/>(LLM, JSON mode)<br/><br/>category, characters,<br/>themes, tone, length"]
+        Plan["2 - Story Planner<br/>(LLM, JSON mode)<br/><br/>4-beat outline:<br/>SETUP, SPARK,<br/>RESOLUTION, WIND_DOWN"]
+        Tell["3 - Storyteller<br/>(LLM, prose)<br/><br/>target words, tone,<br/>banned-content list,<br/>wind-down required"]
+        Judge{{"4 - Judge<br/>(LLM, JSON mode)<br/><br/>7-dim rubric<br/>pass = all >= 4/5"}}
+        Refine["5 - Refiner<br/>(LLM, targeted edits)<br/><br/>not a full rewrite<br/>max 2 iterations"]
+
+        Cat -- StoryRequest --> Plan
+        Plan -- StoryPlan --> Tell
+        Tell -- Draft --> Judge
+        Judge -- fail --> Refine
+        Refine -- new Draft --> Judge
+    end
+
+    Display[/"Display Story<br/>+ reading time"/]
+    Tweak["6 - User Feedback<br/>Enter = accept<br/>text = User Tweak prompt"]
+    UserTweak["User Tweak<br/>(LLM, targeted edits<br/>from free-form request)<br/><br/>re-judge always;<br/>force-refine if safety<br/>or wind-down breaks"]
+
+    User --> Cat
+    Judge -- pass --> Display
+    Display --> Tweak
+    Tweak -- text --> UserTweak
+    UserTweak --> Display
+    Tweak -- Enter --> Done([Sweet dreams])
+
+    classDef llm fill:#e7f0ff,stroke:#3b6ec5,color:#0b2545
+    classDef io fill:#fff7e6,stroke:#c98a1a,color:#4a2f00
+    classDef done fill:#e9f7ec,stroke:#3a8a4f,color:#1c4a2c
+    class Cat,Plan,Tell,Judge,Refine,UserTweak llm
+    class User,Display,Tweak io
+    class Done done
+```
+
+Legend: blue = LLM call · amber = user-facing I/O · green = terminal state.
+Full diagram (with extended commentary and an ASCII version) lives in
+[`diagram.md`](./diagram.md).
+
+## Design
 
 The pipeline has six stages:
 
